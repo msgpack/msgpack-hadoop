@@ -35,6 +35,7 @@ import org.apache.hadoop.mapred.OutputFormat;
 
 import org.msgpack.hadoop.hive.serde2.MessagePackSerDe;
 import org.msgpack.hadoop.mapred.MessagePackInputFormat;
+import org.msgpack.hadoop.mapred.MessagePackOutputFormat;
 
 class MessagePackStorageHandler extends DefaultStorageHandler {
     @Override
@@ -44,7 +45,7 @@ class MessagePackStorageHandler extends DefaultStorageHandler {
 
     @Override
     public Class<? extends OutputFormat> getOutputFormatClass() {
-        return null;
+        return MessagePackOutputFormat.class;
     }
 
     @Override
