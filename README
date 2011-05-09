@@ -1,0 +1,87 @@
+MessagePack-Hadoop Integration
+========================================
+
+This package contains the bridge layer between MessagePack (http://msgpack.org)
+and Hadoop (http://hadoop.apache.org/) families.
+
+This enables you to run MR jobs on the MessagePack-formatted data, and also
+enables you to issue Hive query language over it.
+
+MessagePack-Hive adapter enables SQL-based adhoc-query, which takes *nested*
+*unstructured* data as input (like JSON, but binary-encoded). Of course, query
+is executed with MapReduce framework!
+
+Here is the sample MessagePack-Hive query, which counts unique user per URL.
+
+> CREATE EXTERNAL TABLE IF NOT EXISTS mpbin (v string) \
+  ROW FORMAT DELIMITED FIELDS TERMINATED BY '@'  LINES TERMINATED BY '\n' \
+  LOCATION '/path/to/hdfs/';
+
+> SELECT COUNT(1) \
+  FROM mpbin LATERAL VIEW msgpack_map(v, 'user', 'url') m AS user, url
+  GROUP BY txt;
+
+Required Setup
+========================================
+
+Please setup Hadoop + Hive system. Either Local, Pseudo-Distributed, or
+Distributed environment is OK.
+
+Hive Getting Started
+========================================
+
+1. locate jars
+
+Put these jars to $HIVE_HOME/lib/ directory.
+
+* msgpack-hadoop-$version.jar
+* msgpack-$version.jar
+* javassist-$version.jar
+
+2. exec hive shell
+
+Please execute the following command.
+
+$ hive --auxpath $HIVE_HOME/lib/msgpack-hadoop-$version.jar,$HIVE_HOME/lib/msgpack-$version.jar,$HIVE_HOME/lib/javassist-$version.jar
+
+You can skip --auxpath option once modify your hive-site.xml.
+
+<property>
+  <name>hive.aux.jars.path</name>
+  <value>$HIVE_HOME/lib/msgpack-hadoop-$version.jar,$HIVE_HOME/lib/msgpack-$version.jar,$HIVE_HOME/lib/javassist-$version.jar</value>
+</property>
+
+3. add jar and load custom UDTF function
+
+This step is required for every Hive query.
+
+hive> add $HIVE_HOME/lib/msgpack-hadoop-$version.jar
+hive> add $HIVE_HOME/lib/msgpack-$version.jar
+hive> add $HIVE_HOME/lib/javassist-$version.jar
+hive> CREATE TEMPORARY FUNCTION msgpack_map AS 'org.msgpack.hadoop.hive.udf.GenericUDTFMessagePackMap';
+
+4. create external table
+
+Create external table, which points the data directory.
+
+hive> CREATE EXTERNAL TABLE IF NOT EXISTS mp_table (v string) \
+      ROW FORMAT DELIMITED FIELDS TERMINATED BY '@'  LINES TERMINATED BY '\n' \
+      LOCATION '/path/to/hdfs/';
+
+5. execute the query
+
+Finally, execute the SELECT query over input data.
+
+Input msgpack data is unstructured, nested data. Therefore, you need to "map"
+MessagePack structure to Hive field name. Actually, you can map the field by
+using msgpack_map() UDTF function, and name the fields by "AS" clause.
+
+hive> SELECT COUNT(1) \
+      FROM mp_table LATERAL VIEW msgpack_map(v, 'user', 'url') m AS user, url
+      GROUP BY txt;
+
+Caveats
+========================================
+
+Currently, MessagePackInputFormat is now unsplittable. Therefore, you need to
+manually *shred* the data into small pieces.
