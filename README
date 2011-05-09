@@ -17,7 +17,7 @@ Here is the sample MessagePack-Hive query, which counts unique user per URL.
   ROW FORMAT DELIMITED FIELDS TERMINATED BY '@'  LINES TERMINATED BY '\n' \
   LOCATION '/path/to/hdfs/';
 
-> SELECT COUNT(1) \
+> SELECT url, COUNT(1) \
   FROM mpbin LATERAL VIEW msgpack_map(v, 'user', 'url') m AS user, url
   GROUP BY txt;
 
@@ -76,7 +76,7 @@ Input msgpack data is unstructured, nested data. Therefore, you need to "map"
 MessagePack structure to Hive field name. Actually, you can map the field by
 using msgpack_map() UDTF function, and name the fields by "AS" clause.
 
-hive> SELECT COUNT(1) \
+hive> SELECT url, COUNT(1) \
       FROM mp_table LATERAL VIEW msgpack_map(v, 'user', 'url') m AS user, url
       GROUP BY txt;
 
