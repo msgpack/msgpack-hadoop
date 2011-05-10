@@ -19,7 +19,7 @@
 package org.msgpack.hadoop.hive.udf;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,7 +31,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
@@ -48,15 +50,15 @@ import org.msgpack.MessageTypeException;
 import org.msgpack.MessagePack;
 import static org.msgpack.Templates.*;
 
-@Description(name = "msgpack_map",
-    value = "_FUNC_(msgpackBinary, col1, col2, ..., colN) - parse MessagePack raw binary into a map. " +
-    		"All the input parameters and output column types are string.")
-public class GenericUDTFMessagePackMap extends GenericUDTF {
+@Description(name = "msgpack_array",
+    value = "_FUNC_(msgpackBinary, index1, index2, ..., indexN) - parse MessagePack raw binary into a array. " +
+            "All the input parameters and output column types are string.")
+public class GenericUDTFMessagePackArray extends GenericUDTF {
 
-    private static Log LOG = LogFactory.getLog(GenericUDTFMessagePackMap.class.getName());
+    private static Log LOG = LogFactory.getLog(GenericUDTFMessagePackArray.class.getName());
 
     int numCols;    // number of output columns
-    String[] keys; // array of path expressions, each of which corresponds to a column
+    int[] indexes; // array of path expressions, each of which corresponds to a column
     Text[] retVals; // array of returned column values
     Text[] cols;    // object pool of non-null Text, avoid creating objects all the time
     Object[] nullVals; // array of null column values
@@ -74,23 +76,23 @@ public class GenericUDTFMessagePackMap extends GenericUDTF {
         numCols = args.length - 1;
 
         if (numCols < 1) {
-            throw new UDFArgumentException("msgpack_map() takes at least two arguments: " +
+            throw new UDFArgumentException("msgpack_array() takes at least two arguments: " +
                                            "the MessagePack binary a key");
         }
 
         if (!(args[0] instanceof StringObjectInspector)) {
-            throw new UDFArgumentException("msgpack_map() takes string type for the first argument");
+            throw new UDFArgumentException("msgpack_array() takes string type for the first argument");
         }
 
         for (int i = 1; i < args.length; ++i) {
-            if (!(args[i] instanceof StringObjectInspector)) {
-                throw new UDFArgumentException("msgpack_map()'s keys have to be string type");
+            if (!(args[i] instanceof PrimitiveObjectInspector)) {
+                throw new UDFArgumentException("msgpack_array()'s arguments have to be int type");
             }
         }
 
         seenErrors = false;
         pathParsed = false;
-        keys = new String[numCols];
+        indexes = new int[numCols];
         cols = new Text[numCols];
         retVals = new Text[numCols];
         nullVals = new Object[numCols];
@@ -123,7 +125,7 @@ public class GenericUDTFMessagePackMap extends GenericUDTF {
         // get the path expression for the 1st row only
         if (!pathParsed) {
             for (int i = 0;i < numCols; ++i) {
-                keys[i] = ((StringObjectInspector) inputOIs[i+1]).getPrimitiveJavaObject(o[i+1]);
+                indexes[i] = PrimitiveObjectInspectorUtils.getInt(o[i+1], (PrimitiveObjectInspector) inputOIs[i+1]);
             }
             pathParsed = true;
         }
@@ -134,10 +136,14 @@ public class GenericUDTFMessagePackMap extends GenericUDTF {
             return;
         }
         try {
-            Map<String,MessagePackObject> map = (Map<String,MessagePackObject>)
-                MessagePack.unpack(binary, tMap(TString,TAny));
+            List<MessagePackObject> array = (List<MessagePackObject>)
+                MessagePack.unpack(binary, tList(TAny));
             for (int i = 0; i < numCols; ++i) {
-                MessagePackObject obj = map.get(keys[i]);
+                MessagePackObject obj = null;
+                int index = indexes[i];
+                if(array.size() > index && index > 0) {
+                    obj = array.get(indexes[i]);
+                }
                 if(obj == null) {
                     retVals[i] = null;
                 } else {
@@ -145,22 +151,22 @@ public class GenericUDTFMessagePackMap extends GenericUDTF {
                 }
             }
             //for (int i = 0; i < numCols; ++i) {
-            //  if (jsonObj.isNull(keys[i])) {
+            //  if (jsonObj.isNull(indexes[i])) {
             //    retVals[i] = null;
             //  } else {
             //    if (retVals[i] == null) {
             //      retVals[i] = cols[i]; // use the object pool rather than creating a new object
             //    }
-            //    retVals[i].set(jsonObj.getString(keys[i]));
+            //    retVals[i].set(jsonObj.getString(indexes[i]));
             //  }
             //}
             forward(retVals);
             return;
 
         } catch (MessageTypeException e) {
-            // type error, object is not a map
+            // type error, object is not an array
             if (!seenErrors) {
-                LOG.error("The input is not a map: " + e +  ". Skipping such error messages in the future.");
+                LOG.error("The input is not an array: " + e +  ". Skipping such error messages in the future.");
                 seenErrors = true;
             }
             forward(nullVals);
@@ -217,6 +223,6 @@ public class GenericUDTFMessagePackMap extends GenericUDTF {
 
     @Override
     public String toString() {
-        return "msgpack_map";
+        return "msgpack_array";
     }
 }
