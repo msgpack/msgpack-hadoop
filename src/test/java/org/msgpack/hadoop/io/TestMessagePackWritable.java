@@ -43,20 +43,25 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestMessagePackWritable extends TestCase {
     public void testMessagePackWritable() throws Exception {
-        byte[] raw = MessagePack.pack(10);
-        MessagePackObject obj = MessagePack.unpack(raw);
-        MessagePackWritable r1 = new MessagePackWritable(obj);
+        int n = 100;
+
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bo);
-        r1.write(out);
+        for (int i = 0; i < n; i++) {
+            byte[] raw = MessagePack.pack(i);
+            MessagePackObject obj = MessagePack.unpack(raw);
+            MessagePackWritable r1 = new MessagePackWritable(obj);
+            r1.write(out);
+        }
         byte[] serialized = bo.toByteArray();
 
         MessagePackWritable r2 = new MessagePackWritable();
         ByteArrayInputStream bi = new ByteArrayInputStream(serialized);
         DataInputStream in = new DataInputStream(bi);
-        r2.readFields(in);
-
-        assertEquals(r1.get().convert(Templates.TLong),
-                     r2.get().convert(Templates.TLong));
+        for (int i = 0; i < n; i++) {
+            r2.readFields(in);
+            assertEquals((long)i,
+                         r2.get().convert(Templates.TLong));
+        }
     }
 }
