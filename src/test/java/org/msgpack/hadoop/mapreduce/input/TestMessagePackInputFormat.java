@@ -30,7 +30,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 
 import org.msgpack.MessagePack;
-import org.msgpack.MessagePackObject;
+import org.msgpack.type.Value;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 import junit.framework.TestCase;
@@ -95,9 +95,8 @@ public class TestMessagePackInputFormat extends TestCase {
             try {
                 while (reader.nextKeyValue()) {
                     LongWritable key = reader.getCurrentKey();
-                    MessagePackWritable val = reader.getCurrentValue();
-                    MessagePackObject obj = val.get();
-                    assertEquals(count, obj.asLong());
+                    Value val = reader.getCurrentValue().get();
+                    assertEquals(count, val.asIntegerValue().getLong());
                     count++;
                 }
             } finally {

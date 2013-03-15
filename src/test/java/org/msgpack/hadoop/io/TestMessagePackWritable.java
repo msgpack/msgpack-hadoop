@@ -31,8 +31,8 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
-import org.msgpack.*;
-import org.msgpack.Templates.*;
+import org.msgpack.MessagePack;
+import org.msgpack.type.Value;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 import static org.junit.Assert.assertEquals;
@@ -43,14 +43,15 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestMessagePackWritable extends TestCase {
     public void testMessagePackWritable() throws Exception {
+        MessagePack msgPack = new MessagePack();
         int n = 100;
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bo);
         for (int i = 0; i < n; i++) {
-            byte[] raw = MessagePack.pack(i);
-            MessagePackObject obj = MessagePack.unpack(raw);
-            MessagePackWritable r1 = new MessagePackWritable(obj);
+            byte[] raw = msgPack.write(i);
+            Value val = msgPack.read(raw);
+            MessagePackWritable r1 = new MessagePackWritable(val);
             r1.write(out);
         }
         byte[] serialized = bo.toByteArray();
@@ -61,7 +62,7 @@ public class TestMessagePackWritable extends TestCase {
         for (int i = 0; i < n; i++) {
             r2.readFields(in);
             assertEquals((long)i,
-                         r2.get().convert(Templates.TLong));
+                         r2.get().asIntegerValue().getLong());
         }
     }
 }

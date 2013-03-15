@@ -32,11 +32,13 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.io.LongWritable;
 
 import org.msgpack.MessagePack;
-import org.msgpack.Unpacker;
-import org.msgpack.MessagePackObject;
+import org.msgpack.type.Value;
+import org.msgpack.unpacker.Unpacker;
+
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 public class MessagePackRecordReader extends RecordReader<LongWritable, MessagePackWritable> {
+    private MessagePack msgPack_ = new MessagePack();
     private Unpacker unpacker_;
 
     private final LongWritable key_ = new LongWritable(0);
@@ -52,7 +54,8 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
     }
 
     @Override
-    public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException, InterruptedException {
+    public void initialize(InputSplit genericSplit, TaskAttemptContext context) 
+                           throws IOException, InterruptedException {
         FileSplit split = (FileSplit)genericSplit;
         final Path file = split.getPath();
         Configuration conf = context.getConfiguration();
@@ -62,9 +65,9 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
         fileIn_ = fs.open(split.getPath());
 
         // Create streaming unpacker
-        unpacker_ = new Unpacker(fileIn_);
+        unpacker_ = msgPack_.createUnpacker(fileIn_);
 
-        // Seek to the start of the split
+        // Seek to the start_ of the split
         start_ = split.getStart();
         end_ = start_ + split.getLength();
         pos_ = start_;
@@ -95,9 +98,9 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        for (MessagePackObject obj : unpacker_) {
+        for (Value val : unpacker_) {
             long key = fileIn_.getPos();
-            MessagePackObject val = obj;
+            pos_ = key;
             key_.set(key);
             val_.set(val);
             return true;
