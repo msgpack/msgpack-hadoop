@@ -33,8 +33,7 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.io.NullWritable;
 
 import org.msgpack.MessagePack;
-import org.msgpack.Unpacker;
-import org.msgpack.MessagePackObject;
+import org.msgpack.unpacker.Unpacker;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 public class MessagePackRecordWriter implements RecordWriter<NullWritable, MessagePackWritable> {
