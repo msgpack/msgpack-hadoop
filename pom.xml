@@ -1,4 +1,7 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project 
+	xmlns="http://maven.apache.org/POM/4.0.0" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.msgpack.hadoop</groupId>
   <artifactId>msgpack-hadoop</artifactId>
@@ -22,9 +25,9 @@
   </scm>
 
   <properties>
-    <msgpack.version>0.5.2-devel</msgpack.version>
+    <msgpack.version>0.6.7</msgpack.version>
     <hadoop.version>0.20.2</hadoop.version>
-    <hive.version>0.8.0-SNAPSHOT</hive.version>
+    <hive.version>0.8.0</hive.version>
   </properties>
 
   <dependencies>
@@ -83,18 +86,23 @@
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
-      <artifactId>common</artifactId>
+      <artifactId>hive-common</artifactId>
       <version>${hive.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
-      <artifactId>exec</artifactId>
+      <artifactId>hive-exec</artifactId>
       <version>${hive.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
-      <artifactId>serde</artifactId>
+      <artifactId>hive-serde</artifactId>
       <version>${hive.version}</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.apache.hive</groupId>
+    	<artifactId>hive-metastore</artifactId>
+    	<version>${hive.version}</version>
     </dependency>
   </dependencies>
 
