@@ -18,37 +18,43 @@
 
 package org.msgpack.hadoop.mapreduce.input;
 
+import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.io.LongWritable;
-
 import org.msgpack.MessagePack;
-import org.msgpack.Unpacker;
-import org.msgpack.MessagePackObject;
 import org.msgpack.hadoop.io.MessagePackWritable;
+import org.msgpack.unpacker.Unpacker;
+import org.msgpack.MessagePackable;
 
 public class MessagePackRecordReader extends RecordReader<LongWritable, MessagePackWritable> {
-    private Unpacker unpacker_;
+	private static final Log LOG = LogFactory.getLog(MessagePackRecordReader.class);
+    private Unpacker unpacker;
 
-    private final LongWritable key_ = new LongWritable(0);
-    private final MessagePackWritable val_;
+    private final LongWritable key = new LongWritable(0);
+    private MessagePackWritable val;
 
-    protected long start_;
-    protected long pos_;
-    protected long end_;
-    private FSDataInputStream fileIn_;
+    protected long start;
+    protected long pos;
+    protected long end;
+    private FSDataInputStream fileIn;
 
-    public MessagePackRecordReader() {
-        val_ = new MessagePackWritable();
+	private MessagePack msgpack;
+	private Class<? extends MessagePackable> payloadClass;
+
+    public MessagePackRecordReader(MessagePackWritable writable, Class<? extends MessagePackable> payloadClass) {
+        val = writable;
+        this.payloadClass = payloadClass;
     }
 
     @Override
@@ -59,49 +65,95 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
 
         // Open the file
         FileSystem fs = file.getFileSystem(conf);
-        fileIn_ = fs.open(split.getPath());
+        fileIn = fs.open(split.getPath());
 
-        // Create streaming unpacker
-        unpacker_ = new Unpacker(fileIn_);
 
         // Seek to the start of the split
-        start_ = split.getStart();
-        end_ = start_ + split.getLength();
-        pos_ = start_;
+        start = split.getStart();
+        end = start + split.getLength();
+        pos = start;
+        
+        // Create streaming unpacker
+		msgpack = new MessagePack();
+        unpacker = msgpack.createUnpacker(fileIn);
+        
+		if(LOG.isDebugEnabled())
+			LOG.debug("Reading a split "+start+" to "+end);
+
+        fileIn.seek(start);
+
     }
 
     @Override
     public float getProgress() {
-        if (start_ == end_) {
+        if (start == end) {
             return 0.0f;
         } else {
-            return Math.min(1.0f, (pos_ - start_) / (float) (end_ - start_));
+            return Math.min(1.0f, (pos - start) / (float) (end - start));
         }
     }
 
     @Override
     public synchronized void close() throws IOException {
+    	fileIn.close();
     }
 
     @Override
     public LongWritable getCurrentKey() throws IOException, InterruptedException {
-        return key_;
+        return key;
     }
 
     @Override
     public MessagePackWritable getCurrentValue() throws IOException, InterruptedException {
-        return val_;
+        return val;
     }
-
+    
     @Override
-    public boolean nextKeyValue() throws IOException, InterruptedException {
-        for (MessagePackObject obj : unpacker_) {
-            long key = fileIn_.getPos();
-            MessagePackObject val = obj;
-            key_.set(key);
-            val_.set(val);
-            return true;
-        }
+    public boolean nextKeyValue() throws IOException, InterruptedException {	
+    	
+    	if(pos < end ){
+    		try{
+    			long theKey = pos;
+        		if(readAValue()){
+        			key.set(theKey);
+        			return true;
+        		}
+        	}catch(EOFException e){
+    			if(LOG.isDebugEnabled())
+    				LOG.debug("Reached end of file while reading msgpack data.");
+        	}
+    	}
+    	
         return false;
     }
+
+    // returns true if value could be read successfully
+	private boolean readAValue() throws IOException{
+		int countSkip=0;
+		// try reading an object. If it fails, skip a byte
+		do{
+    		try{
+	            val.setPayload(unpacker.read(payloadClass));
+	            pos = fileIn.getPos();
+	            return true;
+    		}catch(org.msgpack.MessageTypeException e){
+    			pos++;
+    			countSkip++;
+    			// unpacker isn't clean anymore, need a new one
+    			unpacker = msgpack.createUnpacker(fileIn);
+    			// the new unpacker seems to need this to read
+    			// from where it should
+    			fileIn.seek(pos);
+        	}
+		}while(pos < end);
+		
+		// Debugging
+		if(LOG.isDebugEnabled() && countSkip >=0){
+			LOG.debug("Skipped "+countSkip+" bytes. Pos:"+pos);
+    		if( pos >= end ){
+    			LOG.debug("Reached end of split while skipping bytes. Pos:"+pos);
+    		}
+		}
+		return false;
+	}
 }
