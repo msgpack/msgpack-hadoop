@@ -27,17 +27,17 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 public class MessagePackRecordWriter extends RecordWriter<NullWritable, MessagePackWritable> {
-    protected final DataOutputStream out_;
+    protected final DataOutputStream out;
 
     public MessagePackRecordWriter(DataOutputStream out) {
-        out_ = out;
+        this.out = out;
     }
 
     public void write(NullWritable key, MessagePackWritable val) throws IOException, InterruptedException {
-        out_.write(val.getRawBytes());
+        val.write(out);
     }
 
     public void close(TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        out_.close();
+        out.close();
     }
 }

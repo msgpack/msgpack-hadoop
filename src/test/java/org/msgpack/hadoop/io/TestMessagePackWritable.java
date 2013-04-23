@@ -18,31 +18,13 @@
 
 package org.msgpack.hadoop.io;
 
-import java.util.*;
-import java.io.*;
-
-import org.apache.commons.codec.binary.Base64;
 import junit.framework.TestCase;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.BooleanWritable;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-
-import org.msgpack.*;
-import org.msgpack.hadoop.io.MessagePackWritable;
-import org.msgpack.type.Value;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the MessagePackWritable class.
  */
 public class TestMessagePackWritable extends TestCase {
-    public void testMessagePackWritable() throws Exception {
+    /*public void testMessagePackWritable() throws Exception {
         int n = 100;
         MessagePackWritable mpw;
         
@@ -67,5 +49,5 @@ public class TestMessagePackWritable extends TestCase {
             assertEquals((long)i,
                          r2.get().convert(Templates.TLong));
         }
-    }
+    }*/
 }
