@@ -19,25 +19,19 @@
 package org.msgpack.hadoop.mapred;
 
 import java.io.IOException;
-import java.io.InputStream;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.InputSplit;
-import org.apache.hadoop.mapred.RecordReader;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.io.LongWritable;
-
-import org.msgpack.MessagePack;
-import org.msgpack.Unpacker;
-import org.msgpack.MessagePackObject;
+import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.RecordReader;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 public class MessagePackRecordReader implements RecordReader<LongWritable, MessagePackWritable> {
-    private Unpacker unpacker_;
+    private org.msgpack.unpacker.Unpacker unpacker_;
 
     protected long start_;
     protected long pos_;

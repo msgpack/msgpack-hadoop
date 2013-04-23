@@ -26,9 +26,12 @@
 
   <properties>
     <msgpack.version>0.6.7</msgpack.version>
-    <hadoop.version>0.20.2</hadoop.version>
-    <hive.version>0.8.0</hive.version>
+    <hadoop.version>0.20.205.0</hadoop.version>
+    <hive.version>0.8.1</hive.version>
   </properties>
+ 
+
+
 
   <dependencies>
     <dependency>
@@ -212,6 +215,12 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+      <!--  needed for jdo2-api-2.3-ec, require by hive but missing in maven2 repo  -->
+  	<repository>
+		<id>repo.springsource.org</id>
+		<name>repo.springsource.org-releases</name>
+		<url>http://repo.springsource.org/ext-release-local</url>
+	</repository>
   </repositories>
 
   <distributionManagement>
