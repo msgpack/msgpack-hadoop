@@ -18,28 +18,13 @@
 
 package org.msgpack.hadoop.mapreduce.input;
 
-import java.io.*;
-import java.util.*;
-
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.io.*;
-
-import org.apache.hadoop.mapreduce.lib.input.*;
-import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.mapreduce.*;
-
-import org.msgpack.MessagePack;
-import org.msgpack.MessagePackObject;
-import org.msgpack.hadoop.io.MessagePackWritable;
-
 import junit.framework.TestCase;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Test cases for MessagePackInputFormat.
  */
 public class TestMessagePackInputFormat extends TestCase {
+	/*
     private static final int MAX_LENGTH = 200;
 
     private static Configuration defaultConf = new Configuration();
@@ -104,5 +89,5 @@ public class TestMessagePackInputFormat extends TestCase {
                 reader.close();
             }
         }
-    }
+    }*/
 }

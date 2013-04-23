@@ -19,61 +19,74 @@
 package org.msgpack.hadoop.mapred;
 
 import java.io.IOException;
-import java.io.InputStream;
 
-import org.apache.hadoop.conf.Configuration;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.InputSplit;
-import org.apache.hadoop.mapred.RecordReader;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.io.LongWritable;
-
+import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hadoop.mapred.InputSplit;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.RecordReader;
 import org.msgpack.MessagePack;
-import org.msgpack.Unpacker;
-import org.msgpack.MessagePackObject;
+import org.msgpack.MessagePackable;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 public class MessagePackRecordReader implements RecordReader<LongWritable, MessagePackWritable> {
-    private Unpacker unpacker_;
+	private static final Log LOG = LogFactory.getLog(MessagePackRecordReader.class);
+    private org.msgpack.unpacker.Unpacker unpacker;
 
-    protected long start_;
-    protected long pos_;
-    protected long end_;
-    private FSDataInputStream fileIn_;
+    protected long start;
+    protected long pos;
+    protected long end;
+    private FSDataInputStream fileIn;
 
-    public MessagePackRecordReader(InputSplit genericSplit, JobConf conf) throws IOException {
-        FileSplit split = (FileSplit)genericSplit;
+	private MessagePack msgpack;
+	private Class<? extends MessagePackable> payloadClass;
+
+    public MessagePackRecordReader(InputSplit genericSplit, JobConf conf, Class<? extends MessagePackable> payloadClass) throws IOException {
+
+        this.payloadClass = payloadClass;
+        
+    	FileSplit split = (FileSplit)genericSplit;
         final Path file = split.getPath();
-
+        
         // Open the file
         FileSystem fs = file.getFileSystem(conf);
-        fileIn_ = fs.open(split.getPath());
+        fileIn = fs.open(split.getPath());
 
-        // Create streaming unpacker
-        unpacker_ = new Unpacker(fileIn_);
 
         // Seek to the start of the split
-        start_ = split.getStart();
-        end_ = start_ + split.getLength();
-        pos_ = start_;
+        start = split.getStart();
+        end = start + split.getLength();
+        pos = start;
+        
+        // Create streaming unpacker
+		msgpack = new MessagePack();
+        unpacker = msgpack.createUnpacker(fileIn);
+        
+		if(LOG.isDebugEnabled())
+			LOG.debug("Reading a split "+start+" to "+end);
+
+        fileIn.seek(start);
     }
 
     public float getProgress() {
-        if (start_ == end_) {
+        if (start == end) {
             return 0.0f;
         } else {
-            return Math.min(1.0f, (pos_ - start_) / (float) (end_ - start_));
+            return Math.min(1.0f, (pos - start) / (float) (end - start));
         }
     }
 
     public long getPos() {
-        return pos_;
+        return pos;
     }
 
     public synchronized void close() throws IOException {
+    	fileIn.close();
     }
 
     public LongWritable createKey() {
@@ -86,11 +99,20 @@ public class MessagePackRecordReader implements RecordReader<LongWritable, Messa
 
     public boolean next(LongWritable key, MessagePackWritable val)
     throws IOException  {
-        for (MessagePackObject obj : unpacker_) {
-            key.set(fileIn_.getPos());
-            val.set(obj);
-            return true;
-        }
+		do{
+    		try{
+	            val.setPayload(unpacker.read(payloadClass));
+	            pos = fileIn.getPos();
+	            return true;
+    		}catch(org.msgpack.MessageTypeException e){
+    			pos++;
+    			// unpacker isn't clean anymore, need a new one
+    			unpacker = msgpack.createUnpacker(fileIn);
+    			// the new unpacker seems to need this to read
+    			// from where it should
+    			fileIn.seek(pos);
+        	}
+		}while(pos < end);
         return false;
     }
 }

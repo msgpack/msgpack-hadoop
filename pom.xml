@@ -1,8 +1,11 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project 
+	xmlns="http://maven.apache.org/POM/4.0.0" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.msgpack.hadoop</groupId>
   <artifactId>msgpack-hadoop</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <description>MessagePack-Hadoop Integration</description>
 
   <name>MessagePack-Hadoop Integration</name>
@@ -22,10 +25,12 @@
   </scm>
 
   <properties>
-    <msgpack.version>0.5.2-devel</msgpack.version>
-    <hadoop.version>0.20.2</hadoop.version>
-    <hive.version>0.8.0-SNAPSHOT</hive.version>
+    <msgpack.version>0.6.7</msgpack.version>
+    <hadoop.version>0.20.205.0</hadoop.version>
   </properties>
+ 
+
+
 
   <dependencies>
     <dependency>
@@ -81,21 +86,7 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>common</artifactId>
-      <version>${hive.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>exec</artifactId>
-      <version>${hive.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>serde</artifactId>
-      <version>${hive.version}</version>
-    </dependency>
+
   </dependencies>
 
   <build>
@@ -190,18 +181,6 @@
       <url>https://repository.jboss.org/nexus/content/groups/public/</url>
       <snapshots>
         <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <!-- for Hive -->
-      <id>apache.snapshots</id>
-      <name>Apache Development Snapshot Repository</name>
-      <url>https://repository.apache.org/content/repositories/snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
       </snapshots>
     </repository>
   </repositories>

@@ -1,3 +1,13 @@
+Warning
+========================================
+
+This is a preliminary port to the latest MessagePack version (0.6.7). Due 
+to the huge amount of changes, this port is only PARTIAL and parts of it
+are UNTESTED. Use with caution.
+
+Fr the same reasons, the hive implementation has been removed for now.
+
+
 MessagePack-Hadoop Integration
 ========================================
 
