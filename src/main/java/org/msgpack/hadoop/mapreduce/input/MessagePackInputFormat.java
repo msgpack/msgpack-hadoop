@@ -28,8 +28,6 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.msgpack.hadoop.io.MessagePackWritable;
-//import storm.portico.message.BrokerMessage;
-//import org.msgpack.hadoop.mapreduce.input.MessagePackRecordReader;
 
 public abstract class MessagePackInputFormat 
 						extends FileInputFormat<LongWritable, MessagePackWritable> {
