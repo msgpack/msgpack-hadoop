@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.msgpack.hadoop</groupId>
   <artifactId>msgpack-hadoop</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1-1</version>
   <description>MessagePack-Hadoop Integration</description>
 
   <name>MessagePack-Hadoop Integration</name>

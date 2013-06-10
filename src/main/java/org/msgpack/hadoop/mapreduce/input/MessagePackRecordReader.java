@@ -34,6 +34,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.msgpack.MessagePack;
 import org.msgpack.hadoop.io.MessagePackWritable;
+import org.msgpack.unpacker.SizeLimitException;
 import org.msgpack.unpacker.Unpacker;
 import org.msgpack.MessagePackable;
 
@@ -127,6 +128,15 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
         return false;
     }
 
+    private void skipReading() throws IOException{
+		pos++;
+		// unpacker isn't clean anymore, need a new one
+		unpacker = msgpack.createUnpacker(fileIn);
+		// the new unpacker seems to need this to read
+		// from where it should
+		fileIn.seek(pos);
+    }
+    
     // returns true if value could be read successfully
 	private boolean readAValue() throws IOException{
 		int countSkip=0;
@@ -137,13 +147,24 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
 	            pos = fileIn.getPos();
 	            return true;
     		}catch(org.msgpack.MessageTypeException e){
-    			pos++;
     			countSkip++;
-    			// unpacker isn't clean anymore, need a new one
-    			unpacker = msgpack.createUnpacker(fileIn);
-    			// the new unpacker seems to need this to read
-    			// from where it should
-    			fileIn.seek(pos);
+    			skipReading();
+    		}catch(SizeLimitException e){
+        		LOG.warn("SizeLimitException while parsing msgpack message: "+e.getMessage());
+    			countSkip++;
+    			skipReading();
+        	}catch(java.io.IOException e){
+        		LOG.warn("IOException while parsing msgpack message: "+e.getMessage());
+        		// this is ugly: we are parsing an IO exception to make sure it was thrown by msgpack itself
+        		// The real problem is that msgpack 0.6.7 throws an IO exception
+        		// when it should throw a FormatException (see org.msgpack.unpacker.MessagePackUnpacker:323)
+        		if(e.getMessage().startsWith("Invalid byte: ")){
+        			// thrown by MsgPack (hopefully :s)
+        			LOG.warn("Error while parsing msgpack message: "+e.getMessage());
+        			skipReading();
+        		}else{
+        			throw e;
+        		}
         	}
 		}while(pos < end);
 		
