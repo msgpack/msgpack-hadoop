@@ -48,6 +48,7 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
     protected long start;
     protected long pos;
     protected long end;
+    private long totalSkippedBytes;
     private FSDataInputStream fileIn;
 
 	private MessagePack msgpack;
@@ -68,7 +69,7 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
         FileSystem fs = file.getFileSystem(conf);
         fileIn = fs.open(split.getPath());
 
-
+        totalSkippedBytes = 0;
         // Seek to the start of the split
         start = split.getStart();
         end = start + split.getLength();
@@ -78,8 +79,8 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
 		msgpack = new MessagePack();
         unpacker = msgpack.createUnpacker(fileIn);
         
-		if(LOG.isDebugEnabled())
-			LOG.debug("Reading a split "+start+" to "+end);
+		if(LOG.isTraceEnabled())
+			LOG.trace("Reading a split "+start+" to "+end+".");
 
         fileIn.seek(start);
 
@@ -96,6 +97,7 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
 
     @Override
     public synchronized void close() throws IOException {
+        LOG.debug("In total, skipped "+totalSkippedBytes+" bytes on this split.");
     	fileIn.close();
     }
 
@@ -139,42 +141,51 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
     
     // returns true if value could be read successfully
 	private boolean readAValue() throws IOException{
-		int countSkip=0;
+		long countSkip = 0;
+        long lastCounted = pos;
+        boolean successfulRead = false;
 		// try reading an object. If it fails, skip a byte
 		do{
     		try{
 	            val.setPayload(unpacker.read(payloadClass));
 	            pos = fileIn.getPos();
-	            return true;
+                successfulRead = true;
+                continue;
     		}catch(org.msgpack.MessageTypeException e){
-    			countSkip++;
-    			skipReading();
+                // skip reading is done below
     		}catch(SizeLimitException e){
         		LOG.warn("SizeLimitException while parsing msgpack message: "+e.getMessage());
-    			countSkip++;
-    			skipReading();
         	}catch(java.io.IOException e){
-        		LOG.warn("IOException while parsing msgpack message: "+e.getMessage());
         		// this is ugly: we are parsing an IO exception to make sure it was thrown by msgpack itself
         		// The real problem is that msgpack 0.6.7 throws an IO exception
         		// when it should throw a FormatException (see org.msgpack.unpacker.MessagePackUnpacker:323)
         		if(e.getMessage().startsWith("Invalid byte: ")){
         			// thrown by MsgPack (hopefully :s)
         			LOG.warn("Error while parsing msgpack message: "+e.getMessage());
-        			skipReading();
         		}else{
+                    LOG.warn("IOException while parsing msgpack message: "+e.getMessage());
         			throw e;
         		}
         	}
-		}while(pos < end);
+            
+            // if try succeeded, we returned
+            // if error was caught, we end up here
+            skipReading();
+            countSkip += pos - lastCounted + 1;
+            lastCounted = pos;
+            
+		}while(!successfulRead && pos < end);
 		
 		// Debugging
-		if(LOG.isDebugEnabled() && countSkip >=0){
-			LOG.debug("Skipped "+countSkip+" bytes. Pos:"+pos);
-    		if( pos >= end ){
-    			LOG.debug("Reached end of split while skipping bytes. Pos:"+pos);
-    		}
-		}
-		return false;
+		if(LOG.isTraceEnabled() && countSkip > 0){
+            LOG.trace("Skipped "+countSkip+" bytes. Pos:"+pos);
+            if( pos >= end ){
+                LOG.trace("Reached end of split while skipping bytes. Pos:"+pos);
+            }
+        }
+        
+        totalSkippedBytes += countSkip;
+        
+		return successfulRead;
 	}
 }
