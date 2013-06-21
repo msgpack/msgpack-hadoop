@@ -159,7 +159,7 @@ public class MessagePackRecordReader extends RecordReader<LongWritable, MessageP
         		// this is ugly: we are parsing an IO exception to make sure it was thrown by msgpack itself
         		// The real problem is that msgpack 0.6.7 throws an IO exception
         		// when it should throw a FormatException (see org.msgpack.unpacker.MessagePackUnpacker:323)
-        		if(e.getMessage().startsWith("Invalid byte: ")){
+        		if(null != e.getMessage() && e.getMessage().startsWith("Invalid byte: ")){
         			// thrown by MsgPack (hopefully :s)
         			LOG.warn("Error while parsing msgpack message: "+e.getMessage());
         		}else{
