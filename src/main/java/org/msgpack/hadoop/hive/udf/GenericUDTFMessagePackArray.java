@@ -141,7 +141,7 @@ public class GenericUDTFMessagePackArray extends GenericUDTF {
             for (int i = 0; i < numCols; ++i) {
                 MessagePackObject obj = null;
                 int index = indexes[i];
-                if(array.size() > index && index > 0) {
+                if(array.size() > index && index >= 0) {
                     obj = array.get(indexes[i]);
                 }
                 if(obj == null) {
