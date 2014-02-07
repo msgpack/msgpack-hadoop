@@ -23,7 +23,7 @@ import junit.framework.TestCase;
 /**
  * Test cases for MessagePackInputFormat.
  */
-public class TestMessagePackInputFormat extends TestCase {
+@Ignore public class TestMessagePackInputFormat extends TestCase {
 	/*
     private static final int MAX_LENGTH = 200;
 

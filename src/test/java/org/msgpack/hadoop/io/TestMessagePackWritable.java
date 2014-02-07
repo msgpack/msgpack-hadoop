@@ -23,7 +23,7 @@ import junit.framework.TestCase;
 /**
  * Tests the MessagePackWritable class.
  */
-public class TestMessagePackWritable extends TestCase {
+@Ignore public class TestMessagePackWritable extends TestCase {
     /*public void testMessagePackWritable() throws Exception {
         int n = 100;
         MessagePackWritable mpw;
