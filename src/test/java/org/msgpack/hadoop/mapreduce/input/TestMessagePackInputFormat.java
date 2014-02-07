@@ -19,6 +19,7 @@
 package org.msgpack.hadoop.mapreduce.input;
 
 import junit.framework.TestCase;
+import org.junit.Ignore;
 
 /**
  * Test cases for MessagePackInputFormat.

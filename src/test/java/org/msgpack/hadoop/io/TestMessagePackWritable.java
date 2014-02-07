@@ -19,7 +19,7 @@
 package org.msgpack.hadoop.io;
 
 import junit.framework.TestCase;
-
+import org.junit.Ignore;
 /**
  * Tests the MessagePackWritable class.
  */
