@@ -20,35 +20,24 @@ package org.msgpack.hadoop.mapred;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.InputSplit;
-import org.apache.hadoop.mapred.RecordWriter;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.io.NullWritable;
-
-import org.msgpack.MessagePack;
-import org.msgpack.Unpacker;
-import org.msgpack.MessagePackObject;
+import org.apache.hadoop.mapred.RecordWriter;
+import org.apache.hadoop.mapred.Reporter;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 public class MessagePackRecordWriter implements RecordWriter<NullWritable, MessagePackWritable> {
-    protected DataOutputStream out_;
+    protected DataOutputStream out;
 
     public MessagePackRecordWriter(DataOutputStream out) throws IOException {
-        out_ = out;
+        this.out = out;
     }
 
     public synchronized void write(NullWritable key, MessagePackWritable value) throws IOException {
-        out_.write(value.getRawBytes());
+    	value.write(out);
     }
 
     public synchronized void close(Reporter reporter) throws IOException {
-        out_.close();
+        out.close();
     }
 }

@@ -21,61 +21,78 @@ package org.msgpack.hadoop.io;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.WritableComparable;
-
+import org.apache.hadoop.io.Writable;
 import org.msgpack.MessagePack;
-import org.msgpack.MessagePackObject;
+import org.msgpack.MessagePackable;
+import org.msgpack.unpacker.Unpacker;
 
 /**
  * A Hadoop Writable wrapper for MessagePack (untyped).
  */
-public class MessagePackWritable implements WritableComparable<MessagePackWritable> {
-    protected MessagePackObject obj_ = null;
+public class MessagePackWritable implements Writable {
+	private MessagePackable payload = null;
+	private MessagePack msgpack;
 
-    public MessagePackWritable() {}
-
-    public MessagePackWritable(MessagePackObject obj) {
-        obj_ = obj;
+    public MessagePackWritable() {
+    	msgpack = new MessagePack();
     }
 
-    public void set(MessagePackObject obj) { obj_ = obj; }
-
-    public MessagePackObject get() { return obj_; }
-
-    public byte[] getRawBytes() {
-        return MessagePack.pack(obj_);
-    }
-    
-    public void write(DataOutput out) throws IOException {
-        assert(obj_ != null);
-        byte[] raw = MessagePack.pack(obj_);
-        if (raw == null) return;
-        out.writeInt(raw.length);
-        out.write(raw, 0, raw.length);
+    public MessagePackable getPayload(){
+    	return payload;
     }
 
-    @SuppressWarnings("unchecked")
-    public void readFields(DataInput in) throws IOException {
-        int size = in.readInt();
-        if (size > 0) {
-            byte[] raw = new byte[size];
-            in.readFully(raw, 0, size);
-            // TODO: 2011/05/07 Kazuki Ohta <kazuki.ohta@gmail.com>
-            // Want to avoid extra allocation here, but MessagePackObject is
-            // abstract.
-            obj_ = MessagePack.unpack(raw);
-            assert(obj_ != null);
-        }
-    }
+	public void setPayload(MessagePackable read) {
+		payload = read;
+	}
 
-    @Override
-    public int compareTo(MessagePackWritable other) {
-        // TODO: 2010/11/09 Kazuki Ohta <kazuki.ohta@gmail.com>
-        // compare without packing
-        byte[] raw1 = MessagePack.pack(this.get());
-        byte[] raw2 = MessagePack.pack(other.get());
-        return BytesWritable.Comparator.compareBytes(raw1, 0, raw1.length, raw2, 0, raw2.length);
-    }
+	public void readFields(DataInput dataInput) throws IOException {
+		msgpack.createUnpacker(new DataInputWrapper(dataInput));
+		payload.readFrom((Unpacker) dataInput);
+	}
+
+	public void write(DataOutput dataOutput) throws IOException {
+		msgpack.createPacker(new DataOutputWrapper(dataOutput));
+	}
+
+
+	 
 }
+	
+
+
+//*Stream and Data* are actually compatible
+//if you just wrap them.
+//I'm afraid I'm missing something here.
+//hadoop is doing the same:
+//org.apache.hadoop.hbase.io.DataInputInputStream 	
+class DataInputWrapper extends InputStream {
+	private DataInput dataInput;
+
+	public DataInputWrapper(DataInput di) {
+		dataInput = di;
+	}
+
+	@Override
+	public int read() throws IOException {
+		return dataInput.readByte();
+	}
+
+}
+
+class DataOutputWrapper extends OutputStream{
+	private DataOutput dataOutput;
+
+	public DataOutputWrapper(DataOutput datOut) {
+		dataOutput = datOut;
+	}
+
+	@Override
+	public void write(int bt) throws IOException {
+		dataOutput.write(bt);
+	}
+}
+
+

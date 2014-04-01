@@ -21,31 +21,23 @@ package org.msgpack.hadoop.mapreduce.output;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-
-import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.msgpack.MessagePack;
 import org.msgpack.hadoop.io.MessagePackWritable;
 
 public class MessagePackRecordWriter extends RecordWriter<NullWritable, MessagePackWritable> {
-    protected final DataOutputStream out_;
+    protected final DataOutputStream out;
 
     public MessagePackRecordWriter(DataOutputStream out) {
-        out_ = out;
+        this.out = out;
     }
 
     public void write(NullWritable key, MessagePackWritable val) throws IOException, InterruptedException {
-        out_.write(val.getRawBytes());
+        val.write(out);
     }
 
     public void close(TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        out_.close();
+        out.close();
     }
 }
